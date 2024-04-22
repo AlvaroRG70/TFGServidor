@@ -12,7 +12,7 @@ class Usuario(AbstractUser):
     
     rol = models.PositiveSmallIntegerField(
         choices=ROLES,
-        default=1
+        default=2
     )
     
     # Cambios en los nombres de los accesores inversos
@@ -31,12 +31,22 @@ class Usuario(AbstractUser):
         related_name='usuario_user_permissions'  # Cambia el nombre del accesor inverso
     )
 
-class Factura(models.Model):
-    fecha_emision = models.DateField()
-    cantidad_total = models.IntegerField()
-    descuento = models.IntegerField()
+    
+class Pedido(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     
+class Servicio(models.Model):
+    nombre = models.CharField(max_length=50)
+    descripcion = models.TextField()
+    precio = models.FloatField()
+    pedidos = models.ManyToManyField(Pedido, through='DetallesCarrito')
+
+class DetallesCarrito(models.Model):
+    cantidad = models.FloatField()
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE)
+    servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
+
+
 class Pago(models.Model):
     METODOS_PAGO = (
         ('tarjeta', 'Tarjeta'),
@@ -46,22 +56,15 @@ class Pago(models.Model):
     
     metodo_pago = models.CharField(max_length=20, choices=METODOS_PAGO)
     cantidad = models.IntegerField()
-    factura = models.OneToOneField(Factura, on_delete=models.CASCADE)
+    pedido = models.OneToOneField(Pedido, on_delete=models.CASCADE)
+class Factura(models.Model):
+    fecha_emision = models.DateField()
+    cantidad_total = models.IntegerField()
+    descuento = models.IntegerField()
+    pago = models.OneToOneField(Pago, on_delete=models.CASCADE)
     
-class Carrito(models.Model):
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
-    
-class Servicio(models.Model):
-    nombre = models.CharField(max_length=50)
-    descripcion = models.TextField()
-    precio = models.FloatField()
-    carritos = models.ManyToManyField(Carrito, through='DetallesCarrito')
 
-class DetallesCarrito(models.Model):
-    cantidad = models.FloatField()
-    carrito = models.ForeignKey(Carrito, on_delete=models.CASCADE)
-    servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
-    
+
 class Resenias(models.Model):
     comentario = models.TextField()
     PUNTUACION = (
