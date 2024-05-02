@@ -1,12 +1,15 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.models import User
+
+
 
 class Usuario(AbstractUser):
-    ADMINISTRADOR = 1
+    TRABAJADOR = 1
     CLIENTE = 2
     ROLES = (
-        (ADMINISTRADOR, 'administrador'),
+        (TRABAJADOR, 'trabajador'),
         (CLIENTE, 'cliente'),
     )
     
@@ -15,34 +18,27 @@ class Usuario(AbstractUser):
         default=2
     )
     
-    # Cambios en los nombres de los accesores inversos
-    groups = models.ManyToManyField(
-        Group,
-        verbose_name=_('groups'),
-        blank=True,
-        help_text=_('The groups this user belongs to. A user will get all permissions granted to each of their groups.'),
-        related_name='usuario_groups'  # Cambia el nombre del accesor inverso
-    )
-    user_permissions = models.ManyToManyField(
-        Permission,
-        verbose_name=_('user permissions'),
-        blank=True,
-        help_text=_('Specific permissions for this user.'),
-        related_name='usuario_user_permissions'  # Cambia el nombre del accesor inverso
-    )
 
+class Cliente(models.Model):
+    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='cliente_rel', unique=True)
+      
+class Trabajador(models.Model):
+    trabajador = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='trabajador_rel', unique=True)  
     
-class Pedido(models.Model):
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
-    
+ 
 class Servicio(models.Model):
     nombre = models.CharField(max_length=50)
     descripcion = models.TextField()
     precio = models.FloatField()
-    pedidos = models.ManyToManyField(Pedido, through='DetallesCarrito')
+
+
+class Pedido(models.Model):
+    realizado = models.BooleanField(default=False)
+    usuario = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+    servicio_carrito = models.ManyToManyField(Servicio)
 
 class DetallesCarrito(models.Model):
-    cantidad = models.FloatField()
+    cantidad = models.IntegerField()
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE)
     servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
 
@@ -57,6 +53,7 @@ class Pago(models.Model):
     metodo_pago = models.CharField(max_length=20, choices=METODOS_PAGO)
     cantidad = models.IntegerField()
     pedido = models.OneToOneField(Pedido, on_delete=models.CASCADE)
+    
 class Factura(models.Model):
     fecha_emision = models.DateField()
     cantidad_total = models.IntegerField()
@@ -75,4 +72,5 @@ class Resenias(models.Model):
         (5, '5'),
     )
     puntuacion = models.IntegerField(choices=PUNTUACION)
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+    

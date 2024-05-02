@@ -37,9 +37,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "debug_toolbar",
+    'django_seed',
     'appMarketing',
+    'automatic_crud',
     'rest_framework',
     'oauth2_provider',
+    'django.contrib.sites', 
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +62,14 @@ MIDDLEWARE = [
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     'allauth.account.middleware.AccountMiddleware',
     "corsheaders.middleware.CorsMiddleware",
+]
+
+AUTH_USER_MODEL = 'appMarketing.Usuario'
+
+INTERNAL_IPS = ["127.0.0.1"]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:4200"
 ]
 
 ROOT_URLCONF = 'mysite.urls'
@@ -146,3 +163,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
 }
+
+SITE_ID = 1
+
+
