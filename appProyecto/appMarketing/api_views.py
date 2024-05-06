@@ -87,13 +87,15 @@ class registrar_usuario(generics.CreateAPIView):
                 if(rol == Usuario.CLIENTE):
                     grupo = Group.objects.get(name='Clientes') 
                     grupo.user_set.add(user)
-                    clientes = Cliente.objects.create( usuario = user)
-                    clientes.save()
+                    cliente = Cliente.objects.create(usuario=user)
+
+                    cliente.save()
                 elif(rol == Usuario.TRABAJADOR):
                     grupo = Group.objects.get(name='Trabajadores') 
                     grupo.user_set.add(user)    
-                    trabajadores = Trabajador.objects.create(usuario = user)
-                    trabajadores.save()
+                    trabajador = Trabajador.objects.create(trabajador=user)
+
+                    trabajador.save()
                 usuarioSerializado = UsuarioSerializer(user)
                 return Response(usuarioSerializado.data)
             except Exception as error:
