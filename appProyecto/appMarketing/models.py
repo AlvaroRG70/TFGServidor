@@ -73,4 +73,6 @@ class Resenias(models.Model):
     )
     puntuacion = models.IntegerField(choices=PUNTUACION)
     usuario = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+    servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE, related_name='resenias',null=True, blank=True)
+
     
