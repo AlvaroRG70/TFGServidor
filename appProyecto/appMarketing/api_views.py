@@ -62,6 +62,28 @@ def servicio_eliminar(request,servicio_id):
             return Response("Servicio ELIMINADO")
         except Exception as error:
             return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
+@api_view(['GET'])
+def resenia_list(request):
+    servicios = Resenias.objects.all()
+    serializer = ReseniasSerializer(servicios, many=True)
+    return Response(serializer.data) 
+
+
+@api_view(['POST'])
+def resenia_create(request):  
+    serializers = ReseniasSerializerCreate(data=request.data)
+    if serializers.is_valid():
+        try:
+            serializers.save()
+            return Response("Reseña CREADO")
+        except Exception as error:
+            return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)      
+        
+
 
 
 from rest_framework import generics

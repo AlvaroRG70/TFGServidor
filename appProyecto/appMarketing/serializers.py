@@ -6,6 +6,13 @@ class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = '__all__'
+        
+
+class ClienteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cliente
+        fields = '__all__'
+        
 
 class PedidoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -13,16 +20,29 @@ class PedidoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class ServicioSerializer(serializers.ModelSerializer):
-    
-    class Meta:
-        model = Servicio
-        fields = ('id', 'nombre', 'descripcion', 'precio')
 
         
         
+
+class ReseniasSerializer(serializers.ModelSerializer):
+
+    usuario = ClienteSerializer()
+
+    class Meta:
+        model = Resenias
+        fields = ('id', 'puntuacion', 'comentario', 'usuario')      
+        
+        
+class ServicioSerializer(serializers.ModelSerializer):
+        
+    resenia = ReseniasSerializer(read_only=True, many=True)
+    
+    class Meta:
+        model = Servicio
+        fields = ('id', 'nombre', 'descripcion', 'precio', 'resenia')
         
 class ServicioSerializerCreate(serializers.ModelSerializer):
+
  
     class Meta:
         model = Servicio
@@ -48,15 +68,30 @@ class ServicioSerializerCreate(serializers.ModelSerializer):
              raise serializers.ValidationError('Al menos debes indicar 10 caracteres')
         return descripcion
     
-        
+    
+    
 
-class ReseniasSerializer(serializers.ModelSerializer):
-    
-    usuario = UsuarioSerializer
-    
+class ReseniasSerializerCreate(serializers.ModelSerializer):
+
+ 
     class Meta:
         model = Resenias
-        fields = ('id', 'puntuacion', 'comentario', 'usuario')
+        fields = ['puntuacion', 'comentario', 'usuario', 'servicio']
+
+    
+    def validate_puntuacion(self,puntuacion):
+        if puntuacion < 0 or puntuacion > 5:
+             raise serializers.ValidationError('número entre 0 y 5')
+        return puntuacion
+    
+    def validate_comentario(self,comentario):
+        if len(comentario) < 0:
+             raise serializers.ValidationError('No puede estar vacío')
+        return comentario
+    
+        
+
+
     
 
 
