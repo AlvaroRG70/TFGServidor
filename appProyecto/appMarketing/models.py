@@ -26,9 +26,13 @@ class Cliente(models.Model):
       
 class Trabajador(models.Model):
     trabajador = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='trabajador_rel', unique=True)  
+    def __str__(self):
+        return self.trabajador.username
     
  
 class Servicio(models.Model):
+    
+    imagen = models.FileField(null=True)
     nombre = models.CharField(max_length=50)
     descripcion = models.TextField()
     precio = models.FloatField()
@@ -76,7 +80,7 @@ class Resenias(models.Model):
         (5, '5'),
     )
     puntuacion = models.IntegerField(choices=PUNTUACION)
-    usuario = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE, related_name='resenias',null=True, blank=True)
 
     

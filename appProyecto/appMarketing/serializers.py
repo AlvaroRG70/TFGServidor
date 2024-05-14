@@ -18,28 +18,32 @@ class PedidoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pedido
         fields = '__all__'
-
-
-
-        
+   
         
 
 class ReseniasSerializer(serializers.ModelSerializer):
 
-    usuario = ClienteSerializer()
+    usuario = UsuarioSerializer()
 
     class Meta:
         model = Resenias
-        fields = ('id', 'puntuacion', 'comentario', 'usuario')      
+        fields = ('id', 'puntuacion', 'comentario', 'usuario', 'servicio')    
+        
+class ReseniasSerializerEdit(serializers.ModelSerializer):
+
+
+    class Meta:
+        model = Resenias
+        fields = ('id', 'puntuacion', 'comentario')    
         
         
-class ServicioSerializer(serializers.ModelSerializer):
-        
-    resenia = ReseniasSerializer(read_only=True, many=True)
+class ServicioSerializer(serializers.ModelSerializer):        
+    
+    resenias = ReseniasSerializer(many=True, read_only=True)
     
     class Meta:
         model = Servicio
-        fields = ('id', 'nombre', 'descripcion', 'precio', 'resenia')
+        fields = ('id','imagen', 'nombre', 'descripcion', 'precio', 'resenias')
         
 class ServicioSerializerCreate(serializers.ModelSerializer):
 
@@ -120,5 +124,20 @@ class UsuarioSerializerRegistro(serializers.Serializer):
         if(not usuario is None):
             raise serializers.ValidationError('Ya existe un usuario con ese nombre')
         return username
+    
+    def validate_email(self,email):
+        correo = Usuario.objects.filter(email=email).first()
+        if(not correo is None):
+             if(not self.instance is None and correo.id == self.instance.id):
+                 pass
+             else:
+                raise serializers.ValidationError('Ya existe un usuario con ese correo')
+        
+        return email
+    
+    def validate_password1(self,password1):
+        if len(password1) < 8:
+             raise serializers.ValidationError('tiene que ser mayor que 8')
+        return password1
     
     

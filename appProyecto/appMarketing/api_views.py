@@ -9,7 +9,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.views import APIView
 
-
+@api_view(['GET']) 
+def usuario_obtener(request,nombreUsuario):
+   
+    usuario = Usuario.objects.all()
+    usuario = usuario.get(username=nombreUsuario)
+    serializer = UsuarioSerializer(usuario)
+    return Response(serializer.data)
 
 @api_view(['GET'])
 def servicio_list(request):
@@ -45,7 +51,7 @@ def servicio_editar(request,servicio_id):
     servicio = Servicio.objects.get(id=servicio_id)
     serializers = ServicioSerializer(data=request.data,instance=servicio)
     if serializers.is_valid():
-        try:    
+        try:        
             serializers.save()
             return Response("Servicio EDITADO")
         except Exception as error:
@@ -63,27 +69,96 @@ def servicio_eliminar(request,servicio_id):
         except Exception as error:
             return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+# @api_view(['GET'])
+# def servicio_buscar(request):
+    
+#     formulario = ServicioBuscarForm(request.query_params)
+    
+#     if formulario.is_valid():
+#         texto = formulario.cleaned_data.get('textoBusqueda')
+#         servicios = Servicio.objects.all()
+#         servicios = servicios.filter(Q(nombre__contains=texto)).all()
+#         serializer = ServicioSerializer(servicios, many=True)
+#         return Response(serializer.data)
+#     else:
+#         return Response(formulario.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['GET']) 
+def resenia_obtener(request,resenia_id):
+   
+    resenia = Resenias.objects.all()
+    resenia = resenia.get(id=resenia_id)
+    serializer = ReseniasSerializer(resenia)
+    return Response(serializer.data)
         
 @api_view(['GET'])
 def resenia_list(request):
     servicios = Resenias.objects.all()
     serializer = ReseniasSerializer(servicios, many=True)
-    return Response(serializer.data) 
+    return Response(serializer.data)
 
+
+#@api_view(['POST'])
+# def resenia_create(request):  
+#     serializers = ReseniasSerializerCreate(data=request.data)
+#     if serializers.is_valid():
+#         try:
+#             serializers.save()
+#             return Response("Reseña CREADO")
+#         except Exception as error:
+#             return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#     else:
+#         return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)      
 
 @api_view(['POST'])
-def resenia_create(request):  
-    serializers = ReseniasSerializerCreate(data=request.data)
-    if serializers.is_valid():
+def resenia_create(request, usuario_id, servicio_id):  
+    # Verifica si el usuario y el servicio existen
+    try:
+        usuario = Usuario.objects.get(id=usuario_id)
+        servicio = Servicio.objects.get(id=servicio_id)
+    except (Usuario.DoesNotExist, Servicio.DoesNotExist):
+        return Response("Usuario o servicio no encontrado", status=status.HTTP_404_NOT_FOUND)
+
+    # Crea una copia mutable de request.data
+    mutable_data = request.data.copy()
+
+    # Agrega los IDs de usuario y servicio a la copia mutable
+    mutable_data['usuario'] = usuario_id
+    mutable_data['servicio'] = servicio_id
+
+    # Crea el serializer con los datos actualizados
+    serializer = ReseniasSerializerCreate(data=mutable_data)
+
+    if serializer.is_valid():
         try:
+            serializer.save()
+            return Response("Reseña CREADA", status=status.HTTP_201_CREATED)
+        except Exception as error:
+            return Response(str(error), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['PUT'])
+def resenia_editar(request,resenia_id):
+    servicio = Resenias.objects.get(id=resenia_id)
+    serializers = ReseniasSerializerEdit(data=request.data,instance=servicio)
+    if serializers.is_valid():
+        try:        
             serializers.save()
-            return Response("Reseña CREADO")
+            return Response("Resenia EDITADO")
         except Exception as error:
             return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
-        return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)      
-        
+        return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 
+@api_view(['DELETE'])
+def resenia_eliminar(request,resenia_id): 
+    servicio = Resenias.objects.get(id=resenia_id)
+    try:
+        servicio.delete()
+        return Response("Servicio ELIMINADO")
+    except Exception as error:
+        return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 from rest_framework import generics
@@ -215,3 +290,25 @@ def obtener_usuario_token(request,token):
     usuario = Usuario.objects.get(id=ModeloToken.user_id)
     serializer = UsuarioSerializer(usuario)
     return Response(serializer.data)
+
+# def obtener_usuario_token(request):
+#     # Obtener el token del usuario desde la solicitud (probablemente lo envíes en el encabezado de autorización)
+#     token = request.auth
+#     if token is None:
+#         return Response({"error": "Token de autorización no proporcionado"}, status=400)
+
+#     try:
+#         # Obtener el modelo AccessToken correspondiente al token
+#         modelo_token = AccessToken.objects.get(token=token)
+#     except AccessToken.DoesNotExist:
+#         return Response({"error": "Token de autorización no válido"}, status=400)
+
+#     try:
+#         # Obtener el usuario correspondiente al token
+#         usuario = Usuario.objects.get(id=modelo_token.user_id)
+#     except Usuario.DoesNotExist:
+#         return Response({"error": "No se encontró el usuario correspondiente al token"}, status=400)
+
+#     # Serializar y devolver los datos del usuario
+#     serializer = UsuarioSerializer(usuario)
+#     return Response(serializer.data)

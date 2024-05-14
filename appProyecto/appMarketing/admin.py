@@ -8,4 +8,7 @@ admin.site.register(Servicio),
 admin.site.register(DetallesCarrito),
 admin.site.register(Pago),
 admin.site.register(Factura),
-admin.site.register(Resenias)
+admin.site.register(Resenias),
+admin.site.register(Cliente),
+admin.site.register(Trabajador)
+

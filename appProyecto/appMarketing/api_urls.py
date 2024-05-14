@@ -3,6 +3,9 @@ from django.urls import path
 from .api_views import *
 
 urlpatterns = [
+    
+    path('usuario/obtener/<str:nombreUsuario>', usuario_obtener),
+    
     path('servicios', servicio_list),
     path('servicios/<int:servicio_id>', servicio_obtener),
     path('servicios/crear', servicio_create),
@@ -10,7 +13,10 @@ urlpatterns = [
     path('servicios/eliminar/<int:servicio_id>',servicio_eliminar),
     
     path('resenias', resenia_list),
-    path('resenias/create', resenia_create),
+    path('resenias/<int:resenia_id>', resenia_obtener),
+    path('resenias/create/<int:usuario_id>/<int:servicio_id>', resenia_create),
+    path('resenia/editar/<int:resenia_id>',resenia_editar),
+    path('resenia/eliminar/<int:resenia_id>',resenia_eliminar),
     
     path('servicios/aniadir_carrito/<int:servicio_id>',agregar_carrito),
     path('servicios/ver_carrito',obtener_carrito),
