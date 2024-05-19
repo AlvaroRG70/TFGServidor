@@ -42,12 +42,12 @@ class Servicio(models.Model):
 
 class Pedido(models.Model):
     realizado = models.BooleanField(default=False)
-    usuario = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     servicio_carrito = models.ManyToManyField(Servicio)
 
-class DetallesCarrito(models.Model):
+class CarritoUsuario(models.Model):
     cantidad = models.IntegerField()
-    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE)
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='detalles_carrito')
     servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
 
 
@@ -82,5 +82,7 @@ class Resenias(models.Model):
     puntuacion = models.IntegerField(choices=PUNTUACION)
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE, related_name='resenias',null=True, blank=True)
+
+
 
     

@@ -5,7 +5,7 @@ from .models import *
 admin.site.register(Usuario),
 admin.site.register(Pedido),
 admin.site.register(Servicio),
-admin.site.register(DetallesCarrito),
+admin.site.register(CarritoUsuario),
 admin.site.register(Pago),
 admin.site.register(Factura),
 admin.site.register(Resenias),

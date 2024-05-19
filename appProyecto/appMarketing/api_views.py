@@ -202,75 +202,144 @@ class registrar_usuario(generics.CreateAPIView):
             return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)    
 
 
-@api_view(['POST'])
-def agregar_carrito(request, servicio_id):
-#    if(request.user.is_authenticated):
-        if request.method == 'POST':
-            aniadir_servicio = Servicio.objects.get(id=servicio_id)
-            pedido_usuario = Pedido.objects.select_related("usuario").prefetch_related("servicio_carrito").filter(usuario=request.user, realizado=False).first()
+# @api_view(['POST'])
+# def agregar_carrito(request, servicio_id):
+# #    if(request.user.is_authenticated):
+#         if request.method == 'POST':
+#             aniadir_servicio = Servicio.objects.get(id=servicio_id)
+#             pedido_usuario = Pedido.objects.select_related("usuario").prefetch_related("servicio_carrito").filter(usuario=request.user, realizado=False).first()
             
             
-            if (pedido_usuario):
-                servicio_carrito = DetallesCarrito.objects.select_related("pedido", "servicio").filter(carrito = pedido_usuario, servicio = aniadir_servicio)
-                if (servicio_carrito):                    
-                    servicio_sumar = DetallesCarrito.objects.get(carrito=pedido_usuario, servicio = aniadir_servicio)
-                    servicio_sumar.cantidad_producto += 1
-                    servicio_sumar.save()
-                else:
-                    DetallesCarrito.objects.create(carrito=pedido_usuario, servicio = aniadir_servicio, cantidad_producto=1)
+#             if (pedido_usuario):
+#                 servicio_carrito = CarritoUsuario.objects.select_related("pedido", "servicio").filter(carrito = pedido_usuario, servicio = aniadir_servicio)
+#                 if (servicio_carrito):                    
+#                     servicio_sumar = CarritoUsuario.objects.get(carrito=pedido_usuario, servicio = aniadir_servicio)
+#                     servicio_sumar.cantidad_producto += 1
+#                     servicio_sumar.save()
+#                 else:
+#                     CarritoUsuario.objects.create(carrito=pedido_usuario, servicio = aniadir_servicio, cantidad_producto=1)
 
-            else:
-                Pedido.objects.create(usuario=request.user, realizado=False)
-                pedido_usuario = Pedido.objects.get(usuario = request.user, realizado=False)
-                DetallesCarrito.objects.create(carrito=pedido_usuario, servicio = aniadir_servicio,cantidad_producto = 1)
+#             else:
+#                 Pedido.objects.create(usuario=request.user, realizado=False)
+#                 pedido_usuario = Pedido.objects.get(usuario = request.user, realizado=False)
+#                 CarritoUsuario.objects.create(carrito=pedido_usuario, servicio = aniadir_servicio,cantidad_producto = 1)
             
-            return Response({"Producto agregado al carrito correctamente"}, status=status.HTTP_200_OK)
+#             return Response({"Producto agregado al carrito correctamente"}, status=status.HTTP_200_OK)
 
 #    else:
 #      return Response({"Necesita iniciar sesion"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
+@api_view(['POST'])
+# @login_required   
+def agregar_carrito(request, servicio_id):
+    if request.method == 'POST':
+        aniadir_servicio = Servicio.objects.get(id=servicio_id)
+        pedido_usuario = Pedido.objects.select_related("usuario").prefetch_related("servicio_carrito").filter(usuario=request.user, realizado=False).first()
+        
+        if pedido_usuario:
+            servicio_carrito = CarritoUsuario.objects.filter(pedido=pedido_usuario, servicio=aniadir_servicio).first()
+            if servicio_carrito:
+                servicio_carrito.cantidad += 1
+                servicio_carrito.save()
+            else:
+                CarritoUsuario.objects.create(pedido=pedido_usuario, servicio=aniadir_servicio, cantidad=1)
+        else:
+            Pedido.objects.create(usuario=request.user, realizado=False)
+            pedido_usuario = Pedido.objects.create(usuario=request.user, realizado=False)
+            CarritoUsuario.objects.create(pedido=pedido_usuario, servicio=aniadir_servicio, cantidad=1)
+        
+        return Response({"Producto agregado al carrito correctamente"}, status=status.HTTP_200_OK)
+
+
+
+
 
 @api_view(['GET'])
 def obtener_carrito(request):
-#    if(request.user.is_authenticated):
+    try:
+        pedido_usuario = Pedido.objects.get(usuario=request.user, realizado=False) 
+        serializer = PedidoSerializer(pedido_usuario)
+        serializer_data = serializer.data
+        total_carrito = 0
+        detalles_carrito = []
         
-        try:
-            pedido_usuario = Pedido.objects.get(usuario=request.user, realizado=False) 
-            serializer = PedidoSerializer(pedido_usuario)
-            serializer = serializer.data
-            total_carrito = 0
-            for servicios in pedido_usuario.detallescarrito_set.all():
-                precio_servicio = servicios.servicio.precio
-                cantidad_servicio = servicios.cantidad_producto
-                total_carrito += precio_servicio * cantidad_servicio
-            
-            serializer_mejorado['total_carrito'] = total_carrito
-            
-            return Response(serializer_mejorado)
+        for item in pedido_usuario.detalles_carrito.all():  # Utiliza el nombre correcto
+            precio_servicio = item.servicio.precio
+            cantidad_servicio = item.cantidad
+            total_carrito += precio_servicio * cantidad_servicio
+            detalles_carrito.append({
+                "servicio_id": item.servicio.id,
+                "nombre_servicio": item.servicio.nombre,
+                "cantidad": item.cantidad,
+                "precio": item.servicio.precio,
+                "total": precio_servicio * cantidad_servicio,
+            })
         
-        except Pedido.DoesNotExist:
-            Pedido.objects.create(usuario=request.user, realizado=False)
-            pedido_usuario = Pedido.objects.get(usuario=request.user, realizado=False)
-            serializer_mejorado=PedidoSerializer(pedido_usuario)
-            return Response(serializer_mejorado.data)
+        serializer_data['detalles_carrito'] = detalles_carrito
+        serializer_data['total_carrito'] = total_carrito
+        
+        return Response(serializer_data, status=status.HTTP_200_OK)
+    
+    except Pedido.DoesNotExist:
+        pedido_usuario = Pedido.objects.create(usuario=request.user, realizado=False)
+        serializer = PedidoSerializer(pedido_usuario)
+        return Response(serializer.data, status=status.HTTP_200_OK)
         
 #    else:
 #        return Response("Necesita iniciar sesion", status=status.HTTP_405_METHOD_NOT_ALLOWED
 
 
-@api_view(['DELETE'])
-def eliminar_carrito(request, producto_id):
-#    if(request.user.is_authenticated):
-        if request.method == 'DELETE':
-            try:
-                eliminar_servicio = Servicio.objects.get(id=servicio_id)
-                pedido_usuario = Pedido.objects.select_related("usuario").prefetch_related("servicio_carrito").filter(usuario=request.user, realizado=False).first()      
-                DetallesCarrito.objects.select_related("pedido", "servicio").filter(carrito = pedido_usuario, servicio = eliminar_servicio).delete()       
-                return Response({"Producto eliminado del carrito correctamente"}, status=status.HTTP_200_OK)
+
+        
+        
+        
+# @api_view(['GET'])
+# def obtener_carrito(request):
+# #    if(request.user.is_authenticated):
+        
+#         try:
+#             pedido_usuario = Pedido.objects.get(usuario=request.user, realizado=False) 
+#             serializer = PedidoSerializer(pedido_usuario)
+#             serializer = serializer.data
+#             total_carrito = 0
+#             for servicios in pedido_usuario.detallescarrito_set.all():
+#                 precio_servicio = servicios.servicio.precio
+#                 cantidad_servicio = servicios.cantidad_producto
+#                 total_carrito += precio_servicio * cantidad_servicio
             
-            except Exception as error:
-                return Response(repr(error), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             serializer_mejorado['total_carrito'] = total_carrito
+            
+#             return Response(serializer_mejorado)
+        
+#         except Pedido.DoesNotExist:
+#             Pedido.objects.create(usuario=request.user, realizado=False)
+#             pedido_usuario = Pedido.objects.get(usuario=request.user, realizado=False)
+#             serializer_mejorado=PedidoSerializer(pedido_usuario)
+#             return Response(serializer_mejorado.data)
+
+
+@api_view(['DELETE'])
+def eliminar_carrito(request, servicio_id):
+    try:
+        eliminar_servicio = Servicio.objects.get(id=servicio_id)
+        pedido_usuario = Pedido.objects.select_related("usuario").prefetch_related("servicio_carrito").filter(usuario=request.user, realizado=False).first()
+        
+        if not pedido_usuario:
+            return Response({"error": "No hay un pedido activo para este usuario"}, status=status.HTTP_404_NOT_FOUND)
+
+        carrito_items = CarritoUsuario.objects.select_related("pedido", "servicio").filter(pedido=pedido_usuario, servicio=eliminar_servicio)
+        
+        if not carrito_items.exists():
+            return Response({"error": "El servicio no está en el carrito"}, status=status.HTTP_404_NOT_FOUND)
+        
+        carrito_items.delete()
+        return Response({"message": "Servicio eliminado del carrito correctamente"}, status=status.HTTP_200_OK)
+    
+    except Servicio.DoesNotExist:
+        return Response({"error": "El servicio no existe"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as error:
+        return Response({"error": repr(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
  #   else:
  #       return Response({"Necesita iniciar sesion"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
