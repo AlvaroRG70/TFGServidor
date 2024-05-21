@@ -8,6 +8,8 @@ from django.db.models import Q,Prefetch, Avg,Max,Min,F
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.views import APIView
+from django.db.models import Sum
+from django.shortcuts import get_object_or_404
 
 @api_view(['GET']) 
 def usuario_obtener(request,nombreUsuario):
@@ -34,16 +36,19 @@ def servicio_obtener(request,servicio_id):
 
 @api_view(['POST'])
 def servicio_create(request):  
-    serializers = ServicioSerializerCreate(data=request.data)
-    if serializers.is_valid():
+    serializer = ServicioSerializerCreate(data=request.data)
+    if serializer.is_valid():
         try:
-            serializers.save()
-            return Response("Servicio CREADO")
+            # Guardar la imagen
+            imagen = request.data.get('imagen', None)
+            if imagen:
+                serializer.validated_data['imagen'] = imagen
+            serializer.save()
+            return Response("Servicio creado", status=status.HTTP_201_CREATED)
         except Exception as error:
-            return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(str(error), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
-        return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
 @api_view(['PUT'])
@@ -229,10 +234,32 @@ class registrar_usuario(generics.CreateAPIView):
 #    else:
 #      return Response({"Necesita iniciar sesion"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+@api_view(['POST'])
+def agregar_carrito(request, servicio_id):
+    aniadir_servicio = Servicio.objects.get(id=servicio_id)
+    pedido_usuario = Pedido.objects.filter(usuario=request.user, realizado=False).first()
+
+    if pedido_usuario:
+        servicio_carrito = CarritoUsuario.objects.filter(pedido=pedido_usuario, servicio=aniadir_servicio).first()
+        if servicio_carrito:
+            servicio_carrito.cantidad += 1
+            servicio_carrito.save()
+        else:
+            CarritoUsuario.objects.create(pedido=pedido_usuario, servicio=aniadir_servicio, cantidad=1)
+    else:
+        pedido_usuario = Pedido.objects.create(usuario=request.user, realizado=False)
+        CarritoUsuario.objects.create(pedido=pedido_usuario, servicio=aniadir_servicio, cantidad=1)
+
+    # Recalcular el total del pedido
+    pedido_usuario.total = pedido_usuario.detalles_carrito.aggregate(total=Sum(F('cantidad') * F('servicio__precio')))['total'] or 0
+    pedido_usuario.save()
+
+    return Response({"Producto agregado al carrito correctamente"}, status=status.HTTP_200_OK)
+
 
 @api_view(['POST'])
 # @login_required   
-def agregar_carrito(request, servicio_id):
+def agregar_carrito1(request, servicio_id):
     if request.method == 'POST':
         aniadir_servicio = Servicio.objects.get(id=servicio_id)
         pedido_usuario = Pedido.objects.select_related("usuario").prefetch_related("servicio_carrito").filter(usuario=request.user, realizado=False).first()
@@ -245,7 +272,6 @@ def agregar_carrito(request, servicio_id):
             else:
                 CarritoUsuario.objects.create(pedido=pedido_usuario, servicio=aniadir_servicio, cantidad=1)
         else:
-            Pedido.objects.create(usuario=request.user, realizado=False)
             pedido_usuario = Pedido.objects.create(usuario=request.user, realizado=False)
             CarritoUsuario.objects.create(pedido=pedido_usuario, servicio=aniadir_servicio, cantidad=1)
         
@@ -254,44 +280,158 @@ def agregar_carrito(request, servicio_id):
 
 
 
+# @api_view(['GET'])
+# def obtener_carrito1(request):
+#     try:
+#         # Buscar un pedido no realizado
+#         pedido_usuario = Pedido.objects.get(usuario=request.user, realizado=False)
+#     except Pedido.DoesNotExist:
+#         # Si no existe un pedido no realizado, crea uno nuevo
+#         pedido_usuario = Pedido.objects.create(usuario=request.user, realizado=False)
+
+#     serializer = PedidoSerializer(pedido_usuario)
+#     serializer_data = serializer.data
+#     total_carrito = 0
+#     detalles_carrito = []
+
+#     for item in pedido_usuario.detalles_carrito.all():
+#         precio_servicio = item.servicio.precio
+#         cantidad_servicio = item.cantidad
+#         total_carrito += precio_servicio * cantidad_servicio
+        
+#         imagen = item.servicio.imagen.url if item.servicio.imagen else None
+#         detalles_carrito.append({
+#             "servicio_id": item.servicio.id,
+#             "imagen": imagen,
+#             "nombre_servicio": item.servicio.nombre,
+#             "cantidad": item.cantidad,
+#             "precio": item.servicio.precio,
+#             "total": precio_servicio * cantidad_servicio,
+#         })
+
+#     serializer_data['detalles_carrito'] = detalles_carrito
+#     serializer_data['total_carrito'] = total_carrito
+
+#     return Response(serializer_data, status=status.HTTP_200_OK)
+
 
 @api_view(['GET'])
 def obtener_carrito(request):
     try:
-        pedido_usuario = Pedido.objects.get(usuario=request.user, realizado=False) 
-        serializer = PedidoSerializer(pedido_usuario)
-        serializer_data = serializer.data
-        total_carrito = 0
-        detalles_carrito = []
-        
-        for item in pedido_usuario.detalles_carrito.all():  # Utiliza el nombre correcto
-            precio_servicio = item.servicio.precio
-            cantidad_servicio = item.cantidad
-            total_carrito += precio_servicio * cantidad_servicio
-            detalles_carrito.append({
-                "servicio_id": item.servicio.id,
-                "nombre_servicio": item.servicio.nombre,
-                "cantidad": item.cantidad,
-                "precio": item.servicio.precio,
-                "total": precio_servicio * cantidad_servicio,
-            })
-        
-        serializer_data['detalles_carrito'] = detalles_carrito
-        serializer_data['total_carrito'] = total_carrito
-        
-        return Response(serializer_data, status=status.HTTP_200_OK)
-    
+        pedido_usuario = Pedido.objects.get(usuario=request.user, realizado=False)
     except Pedido.DoesNotExist:
         pedido_usuario = Pedido.objects.create(usuario=request.user, realizado=False)
-        serializer = PedidoSerializer(pedido_usuario)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    serializer = PedidoSerializer(pedido_usuario)
+    serializer_data = serializer.data
+
+    detalles_carrito = []
+
+    for item in pedido_usuario.detalles_carrito.all():
+        precio_servicio = item.servicio.precio
+        cantidad_servicio = item.cantidad
+        imagen = item.servicio.imagen.url if item.servicio.imagen else None
+        detalles_carrito.append({
+            "servicio_id": item.servicio.id,
+            "imagen": imagen,
+            "nombre_servicio": item.servicio.nombre,
+            "cantidad": item.cantidad,
+            "precio": item.servicio.precio,
+            "total": precio_servicio * cantidad_servicio,
+        })
+
+    serializer_data['detalles_carrito'] = detalles_carrito
+    serializer_data['total_carrito'] = pedido_usuario.total
+
+    return Response(serializer_data, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def pagar_pedido(request, pedido_id):
+    if request.method == 'POST':
+        pedido = get_object_or_404(Pedido, id=pedido_id)
         
-#    else:
-#        return Response("Necesita iniciar sesion", status=status.HTTP_405_METHOD_NOT_ALLOWED
-
-
-
+        # Calcular la cantidad total del pedido
+        cantidad_total = sum(carrito_servicio.servicio.precio * carrito_servicio.cantidad for carrito_servicio in pedido.servicio_carrito.all())
         
+        # Crear la instancia de pago
+        pago = Pago.objects.create(
+            fecha_pago=timezone.now(),
+            cantidad=cantidad_total,
+            pedido=pedido
+        )
+        
+        # Marcar el pedido como realizado
+        pedido.realizado = True
+        pedido.save()
+        
+        return Response({"Pago realizado correctamente"}, status=status.HTTP_200_OK)
+    
+    
+@api_view(['GET']) 
+def pago_obtener(request,pedido_id):
+   
+    pago = Pago.objects.all()
+    pago = pago.get(id=pedido_id)
+    serializer = PagoSerializer(pago)
+    return Response(serializer.data)
+
+# @api_view(['GET', 'POST'])
+# def pago_pedido(request, pedido_id):
+#     if request.method == 'GET':
+#         try:
+#             pago = Pago.objects.get(pedido_id=pedido_id)
+#             serializer = PagoSerializer(pago)
+#             return Response(serializer.data)
+#         except Pago.DoesNotExist:
+#             return Response(status=status.HTTP_404_NOT_FOUND)
+#     elif request.method == 'POST':
+#         serializer = PagoSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save(pedido_id=pedido_id)
+#             # Actualizar el estado del pedido a "realizado = True"
+#             pedido = Pedido.objects.get(pk=pedido_id)
+#             pedido.realizado = True
+#             pedido.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+# @api_view(['POST'])
+# def crear_pago(request, pedido_id):
+#     # Verifica si el pedido existe
+#     try:
+#         pedido = Pedido.objects.get(pk=pedido_id, realizado=False)
+#     except Pedido.DoesNotExist:
+#         return Response({"error": "Pedido no encontrado o ya realizado."}, status=status.HTTP_404_NOT_FOUND)
+    
+#     # Crea una copia mutable de request.data
+#     mutable_data = request.data.copy()
+    
+#     # Calcula la cantidad total del pedido
+#     total_carrito = pedido.detalles_carrito.aggregate(
+#         total=Sum(F('cantidad') * F('servicio__precio'))
+#     )['total'] or 0
+    
+#     # Asigna el ID del pedido y la cantidad total del pedido al pago
+#     mutable_data['pedido'] = pedido_id
+#     mutable_data['cantidad'] = total_carrito
+
+#     # Crea el serializer con los datos actualizados
+#     serializer = PagoSerializer(data=mutable_data)
+    
+#     if serializer.is_valid():
+#         try:
+#             serializer.save()
+#             pedido.realizado = True
+#             pedido.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         except Exception as error:
+#             return Response(str(error), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#     else:
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
         
         
 # @api_view(['GET'])

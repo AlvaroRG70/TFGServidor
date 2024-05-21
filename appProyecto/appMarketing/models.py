@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import User
+from django.utils import timezone
+
 
 
 
@@ -44,21 +46,22 @@ class Pedido(models.Model):
     realizado = models.BooleanField(default=False)
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     servicio_carrito = models.ManyToManyField(Servicio)
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    
+    def calcular_total_carrito(self):
+        total = sum(detalle.cantidad * detalle.servicio.precio for detalle in self.detalles_carrito.all())
+        return total
 
 class CarritoUsuario(models.Model):
+    
     cantidad = models.IntegerField()
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='detalles_carrito')
     servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
 
 
 class Pago(models.Model):
-    METODOS_PAGO = (
-        ('tarjeta', 'Tarjeta'),
-        ('paypal', 'PayPal'),
-        ('efectivo', 'Efectivo'),
-    )
-    
-    metodo_pago = models.CharField(max_length=20, choices=METODOS_PAGO)
+
+    fecha_pago = models.DateField(default=timezone.now)
     cantidad = models.IntegerField()
     pedido = models.OneToOneField(Pedido, on_delete=models.CASCADE)
     

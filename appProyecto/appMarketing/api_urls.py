@@ -22,6 +22,9 @@ urlpatterns = [
     path('servicios/ver_carrito',obtener_carrito),
     path('servicios/eliminar_carrito/<int:servicio_id>',eliminar_carrito),
     
+    path('servicios/pagar/<int:pedido_id>',pagar_pedido),
+    path('obtener/pago/<int:pedido_id>',pago_obtener),
+
     path('registrar/usuario',registrar_usuario.as_view()),
     path('usuario/token/<str:token>',obtener_usuario_token),
     

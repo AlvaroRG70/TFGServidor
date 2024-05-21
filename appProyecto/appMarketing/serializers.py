@@ -46,31 +46,31 @@ class ServicioSerializer(serializers.ModelSerializer):
         fields = ('id','imagen', 'nombre', 'descripcion', 'precio', 'resenias')
         
 class ServicioSerializerCreate(serializers.ModelSerializer):
+    imagen = serializers.ImageField(required=False)  # Permitir que la imagen sea opcional
 
- 
     class Meta:
         model = Servicio
-        fields = ['nombre', 'descripcion', 'precio']
+        fields = ['nombre', 'descripcion', 'precio', 'imagen']
     
-    def validate_nombre(self,nombre):
-        ServicioNombre = Servicio.objects.filter(nombre=nombre).first()
-        if(not ServicioNombre is None):
-             if(not self.instance is None and ServicioNombre.id == self.instance.id):
-                 pass
-             else:
-                raise serializers.ValidationError('Ya existe un servicio con ese nombre')
-        
+    def validate_nombre(self, nombre):
+        # Validación personalizada si es necesario
         return nombre
     
-    def validate_precio(self,precio):
-        if precio < 0:
-             raise serializers.ValidationError('tiene que ser positivo')
+    def validate_precio(self, precio):
+        # Validación personalizada si es necesario
         return precio
     
-    def validate_descripcion(self,descripcion):
-        if len(descripcion) < 10:
-             raise serializers.ValidationError('Al menos debes indicar 10 caracteres')
+    def validate_descripcion(self, descripcion):
+        # Validación personalizada si es necesario
         return descripcion
+
+    def create(self, validated_data):
+        imagen = validated_data.pop('imagen', None)
+        servicio = Servicio.objects.create(**validated_data)
+        if imagen:
+            servicio.imagen = imagen
+            servicio.save()
+        return servicio
     
     
     
@@ -96,18 +96,43 @@ class ReseniasSerializerCreate(serializers.ModelSerializer):
         
 
 
-    
+class CarritoUsuarioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CarritoUsuario
+        fields = ['cantidad', 'servicio']
 
 
 class PedidoSerializer(serializers.ModelSerializer):
-
+    
+    
+    detalles_carrito = CarritoUsuarioSerializer(many=True, read_only=True)
     usuario = UsuarioSerializer()
     servicio_carrito = ServicioSerializer(read_only=True, many=True)
+    total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     
     class Meta:
         model = Pedido
-        fields = ('id', 'realizado', 'usuario', 'servicio_carrito')
+        fields = ('id', 'realizado', 'usuario', 'servicio_carrito', 'detalles_carrito', 'total')
         
+
+        
+        
+class PagoSerializer(serializers.ModelSerializer):
+
+    pedido = PedidoSerializer()
+    
+    class Meta:
+        model = Pago
+        fields = ('id', 'fecha_pago', 'cantidad', 'pedido')
+        
+
+class PagoSerializerCreate(serializers.ModelSerializer):
+
+    pedido = PedidoSerializer()
+
+    class Meta:
+        model = Pago
+        fields = ['id', 'fecha_pago', 'cantidad', 'pedido']
 
         
 
