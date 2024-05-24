@@ -23,9 +23,13 @@ urlpatterns = [
     path('servicios/eliminar_carrito/<int:servicio_id>',eliminar_carrito),
     
     path('servicios/pagar/<int:pedido_id>',pagar_pedido),
-    path('obtener/pago/<int:pedido_id>',pago_obtener),
+    path('obtener/pago/<int:pago_id>',pago_obtener),
 
     path('registrar/usuario',registrar_usuario.as_view()),
     path('usuario/token/<str:token>',obtener_usuario_token),
+    path('usuario/eliminar/<int:usuario_id>',usuario_eliminar),
+    
+    
+    path('send-email', emailAPIView.as_view(), name='send-email')
     
 ]

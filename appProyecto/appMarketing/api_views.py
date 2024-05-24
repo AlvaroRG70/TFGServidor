@@ -10,6 +10,20 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.views import APIView
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404
+from django.core.mail import send_mail
+
+
+class emailAPIView(APIView):
+    def post(self, request):
+        try:
+            to_email = 'rgalvaro70@gmail.com'
+            subject = 'XPO Marketing'
+            message = '\033\nSu registro se ha efectuado con éxito.\nMuchas gracias por contar con nosotros, le mantendremos informados de todas las novedades que tengamos.\n\nReciba un cordial saludo.\n\n\n XPO Marketing©\n\033'
+            send_mail(subject, message, None, [to_email])
+            return Response({'message':'Correo enviado con éxito'},status=status.HTTP_200_OK)
+        except Exception as e:
+            error_message = str(e)
+            return Response({'message':'error_message'},status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET']) 
 def usuario_obtener(request,nombreUsuario):
@@ -350,6 +364,9 @@ def pagar_pedido(request, pedido_id):
     if request.method == 'POST':
         pedido = get_object_or_404(Pedido, id=pedido_id)
         
+        if not pedido.detalles_carrito.exists():
+            return Response({"error": "El carrito está vacío."}, status=status.HTTP_400_BAD_REQUEST)
+        
         # Calcular la cantidad total del pedido
         cantidad_total = sum(carrito_servicio.servicio.precio * carrito_servicio.cantidad for carrito_servicio in pedido.servicio_carrito.all())
         
@@ -366,12 +383,13 @@ def pagar_pedido(request, pedido_id):
         
         return Response({"Pago realizado correctamente"}, status=status.HTTP_200_OK)
     
+ 
     
 @api_view(['GET']) 
-def pago_obtener(request,pedido_id):
+def pago_obtener(request,pago_id):
    
     pago = Pago.objects.all()
-    pago = pago.get(id=pedido_id)
+    pago = pago.get(pedido=pago_id)
     serializer = PagoSerializer(pago)
     return Response(serializer.data)
 
@@ -521,3 +539,13 @@ def obtener_usuario_token(request,token):
 #     # Serializar y devolver los datos del usuario
 #     serializer = UsuarioSerializer(usuario)
 #     return Response(serializer.data)
+
+
+@api_view(['DELETE'])
+def usuario_eliminar(request,usuario_id): 
+    usuario = Usuario.objects.get(id=usuario_id)
+    try:
+        usuario.delete()
+        return Response("Servicio ELIMINADO")
+    except Exception as error:
+        return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
