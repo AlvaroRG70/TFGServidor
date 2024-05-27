@@ -30,6 +30,8 @@ urlpatterns = [
     path('usuario/eliminar/<int:usuario_id>',usuario_eliminar),
     
     
-    path('send-email', emailAPIView.as_view(), name='send-email')
+    path('send-email', emailAPIView.as_view(), name='send-email'),
+    path('servicio/buscar', buscar_servicio_por_nombre),        
+    
     
 ]

@@ -16,7 +16,7 @@ from django.core.mail import send_mail
 class emailAPIView(APIView):
     def post(self, request):
         try:
-            to_email = 'rgalvaro70@gmail.com'
+            to_email = request.data.get('to_email')
             subject = 'XPO Marketing'
             message = '\033\nSu registro se ha efectuado con éxito.\nMuchas gracias por contar con nosotros, le mantendremos informados de todas las novedades que tengamos.\n\nReciba un cordial saludo.\n\n\n XPO Marketing©\n\033'
             send_mail(subject, message, None, [to_email])
@@ -549,3 +549,11 @@ def usuario_eliminar(request,usuario_id):
         return Response("Servicio ELIMINADO")
     except Exception as error:
         return Response(error, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    
+@api_view(['GET'])
+def buscar_servicio_por_nombre(request):
+    nombre_servicio = request.query_params.get('nombre', '')
+    servicios = Servicio.objects.filter(nombre__icontains=nombre_servicio)
+    serializer = ServicioSerializer(servicios, many=True)
+    return Response(serializer.data)    
