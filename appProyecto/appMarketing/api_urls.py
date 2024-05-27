@@ -31,7 +31,9 @@ urlpatterns = [
     
     
     path('send-email', emailAPIView.as_view(), name='send-email'),
-    path('servicio/buscar', buscar_servicio_por_nombre),        
+    path('servicio/buscar', buscar_servicio_por_nombre),       
+    
+    path('dj-rest-auth/google/', GoogleLogin.as_view(), name='google_login'), 
     
     
 ]

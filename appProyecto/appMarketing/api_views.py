@@ -557,3 +557,21 @@ def buscar_servicio_por_nombre(request):
     servicios = Servicio.objects.filter(nombre__icontains=nombre_servicio)
     serializer = ServicioSerializer(servicios, many=True)
     return Response(serializer.data)    
+
+
+
+
+
+
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from dj_rest_auth.registration.views import SocialLoginView
+
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            token = response.data.get('access_token')
+            # Aquí puedes crear y devolver un token OAuth2
+        return response

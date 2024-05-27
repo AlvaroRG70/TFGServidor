@@ -11,3 +11,4 @@ djangorestframework-simplejwt
 django-allauth
 django-cors-headers~=4.3.1
 Pillow==8.4.0
+dj-rest-auth>=2.1.9

@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/v1/', include('appMarketing.api_urls')),
     path('oauth2/', include('oauth2_provider.urls', namespace='oauth2_provider')),
     path("__debug__/", include("debug_toolbar.urls")),
+    path('accounts/', include('allauth.urls')),
 
 ]
 
