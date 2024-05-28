@@ -21,13 +21,14 @@ class PedidoSerializer(serializers.ModelSerializer):
    
         
 
-class ReseniasSerializer(serializers.ModelSerializer):
+class   ReseniasSerializer(serializers.ModelSerializer):
 
     usuario = UsuarioSerializer()
+    servicio_nombre = serializers.CharField(source='servicio.nombre', read_only=True)
 
     class Meta:
         model = Resenias
-        fields = ('id', 'puntuacion', 'comentario', 'usuario', 'servicio')    
+        fields = ('id', 'puntuacion', 'comentario', 'usuario', 'servicio', 'servicio_nombre')    
         
 class ReseniasSerializerEdit(serializers.ModelSerializer):
 

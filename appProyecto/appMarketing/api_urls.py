@@ -17,6 +17,8 @@ urlpatterns = [
     path('resenias/create/<int:usuario_id>/<int:servicio_id>', resenia_create),
     path('resenia/editar/<int:resenia_id>',resenia_editar),
     path('resenia/eliminar/<int:resenia_id>',resenia_eliminar),
+    path('resenia/usuario',resenias_usuario),
+    
     
     path('servicios/aniadir_carrito/<int:servicio_id>',agregar_carrito),
     path('servicios/ver_carrito',obtener_carrito),
@@ -24,10 +26,14 @@ urlpatterns = [
     
     path('servicios/pagar/<int:pedido_id>',pagar_pedido),
     path('obtener/pago/<int:pago_id>',pago_obtener),
+    path('revisar/pago/<int:pago_id>',pago_obtener),
+    
 
     path('registrar/usuario',registrar_usuario.as_view()),
     path('usuario/token/<str:token>',obtener_usuario_token),
     path('usuario/eliminar/<int:usuario_id>',usuario_eliminar),
+    path('usuario/pagos',usuario_obtener_pagos),
+    
     
     
     path('send-email', emailAPIView.as_view(), name='send-email'),

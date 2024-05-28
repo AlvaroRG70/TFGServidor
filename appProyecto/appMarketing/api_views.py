@@ -393,6 +393,14 @@ def pago_obtener(request,pago_id):
     serializer = PagoSerializer(pago)
     return Response(serializer.data)
 
+@api_view(['GET']) 
+def pago_revisar(request,pago_id):
+   
+    pago = Pago.objects.all()
+    pago = pago.get(pedido=pago_id)
+    serializer = PagoSerializer(pago)
+    return Response(serializer.data)
+
 # @api_view(['GET', 'POST'])
 # def pago_pedido(request, pedido_id):
 #     if request.method == 'GET':
@@ -575,3 +583,20 @@ class GoogleLogin(SocialLoginView):
             token = response.data.get('access_token')
             # Aquí puedes crear y devolver un token OAuth2
         return response
+    
+    
+@api_view(['GET'])
+def resenias_usuario(request):
+    # Obtener todas las reseñas del usuario autenticado
+    resenias = Resenias.objects.filter(usuario=request.user)
+    serializer = ReseniasSerializer(resenias, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def usuario_obtener_pagos(request):
+    # Obtener todos los pagos del usuario autenticado
+    pagos = Pago.objects.filter(pedido__usuario=request.user)
+    serializer = PagoSerializer(pagos, many=True)
+    return Response(serializer.data)
