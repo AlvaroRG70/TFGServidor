@@ -1,3 +1,4 @@
+from decimal import Decimal
 from .models import *
 from .serializers import *
 from rest_framework.response import Response
@@ -17,13 +18,41 @@ class emailAPIView(APIView):
     def post(self, request):
         try:
             to_email = request.data.get('to_email')
-            subject = 'XPO Marketing'
-            message = '\033\nSu registro se ha efectuado con éxito.\nMuchas gracias por contar con nosotros, le mantendremos informados de todas las novedades que tengamos.\n\nReciba un cordial saludo.\n\n\n XPO Marketing©\n\033'
+            subject = 'Digital South'
+            message = '\033\nSu registro se ha efectuado con éxito.\nMuchas gracias por contar con nosotros, le mantendremos informados de todas las novedades que tengamos.\n\nReciba un cordial saludo.\n\n\n Digital South©\n\033'
             send_mail(subject, message, None, [to_email])
             return Response({'message':'Correo enviado con éxito'},status=status.HTTP_200_OK)
         except Exception as e:
             error_message = str(e)
             return Response({'message':'error_message'},status=status.HTTP_400_BAD_REQUEST)
+
+class emailPagado(APIView):
+    def post(self, request):
+        try:
+            to_email = request.data.get('to_email')
+            order_id = request.data.get('order_id') 
+            subject = 'Digital South'
+            message = f'Su pedido con identificador {order_id} se ha efectuado con éxito.\nMuchas gracias por contar con nosotros, le mantendremos informados de todas las novedades que tengamos.\n\nReciba un cordial saludo.\n\n\n Digital South©'
+            send_mail(subject, message, None, [to_email, 'rodrimix70@gmail.com'])
+            return Response({'message':'Correo enviado con éxito'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            error_message = str(e)
+            return Response({'message': error_message}, status=status.HTTP_400_BAD_REQUEST)
+        
+class emailContacto(APIView):
+    def post(self, request):
+        try:
+
+            username = request.data.get('email_contact') 
+            email_contact = request.data.get('email_contact') 
+            subject = f'Cliente {username}, {email_contact}'
+            message = request.data.get('message')
+            send_mail(subject, message, None, ['rodrimix70@gmail.com'])
+            return Response({'message':'Correo enviado con éxito'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            error_message = str(e)
+            return Response({'message': error_message}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET']) 
 def usuario_obtener(request,nombreUsuario):
@@ -101,6 +130,9 @@ def servicio_eliminar(request,servicio_id):
 #         return Response(serializer.data)
 #     else:
 #         return Response(formulario.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
 @api_view(['GET']) 
 def resenia_obtener(request,resenia_id):
    
@@ -353,9 +385,16 @@ def obtener_carrito(request):
             "precio": item.servicio.precio,
             "total": precio_servicio * cantidad_servicio,
         })
+        
+    if len(detalles_carrito) == 4:
+        pedido_usuario.descuento = Decimal('0.9')
+        pedido_usuario.total = pedido_usuario.total *  pedido_usuario.descuento
+    
 
     serializer_data['detalles_carrito'] = detalles_carrito
     serializer_data['total_carrito'] = pedido_usuario.total
+    
+    
 
     return Response(serializer_data, status=status.HTTP_200_OK)
 
@@ -499,13 +538,21 @@ def eliminar_carrito(request, servicio_id):
         if not carrito_items.exists():
             return Response({"error": "El servicio no está en el carrito"}, status=status.HTTP_404_NOT_FOUND)
         
+        # Eliminar los items del carrito
         carrito_items.delete()
-        return Response({"message": "Servicio eliminado del carrito correctamente"}, status=status.HTTP_200_OK)
+        
+        # Recalcular el total del carrito
+        total = sum(item.servicio.precio * item.cantidad for item in pedido_usuario.detalles_carrito.all())
+        pedido_usuario.total = total
+        pedido_usuario.save()
+        
+        return Response({"message": "Servicio eliminado del carrito correctamente", "total": total}, status=status.HTTP_200_OK)
     
     except Servicio.DoesNotExist:
         return Response({"error": "El servicio no existe"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as error:
         return Response({"error": repr(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
  #   else:
  #       return Response({"Necesita iniciar sesion"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)

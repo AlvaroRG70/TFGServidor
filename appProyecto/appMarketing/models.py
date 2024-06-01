@@ -40,6 +40,8 @@ class Servicio(models.Model):
     precio = models.FloatField()
     def __str__(self):
         return self.nombre
+    
+
 
 
 class Pedido(models.Model):
@@ -47,16 +49,21 @@ class Pedido(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     servicio_carrito = models.ManyToManyField(Servicio)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    descuento = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     
     def calcular_total_carrito(self):
         total = sum(detalle.cantidad * detalle.servicio.precio for detalle in self.detalles_carrito.all())
         return total
+    
+    
+
 
 class CarritoUsuario(models.Model):
     
     cantidad = models.IntegerField()
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='detalles_carrito')
     servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
+    
 
 
 class Pago(models.Model):

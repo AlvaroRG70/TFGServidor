@@ -46,6 +46,15 @@ class ServicioSerializer(serializers.ModelSerializer):
         model = Servicio
         fields = ('id','imagen', 'nombre', 'descripcion', 'precio', 'resenias')
         
+class PaqueteServiciosSerializer(serializers.ModelSerializer):        
+    
+    servicios = ServicioSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Servicio
+        fields = ('id', 'nombre', 'descripcion', 'precio', 'servicios')
+        
+        
 class ServicioSerializerCreate(serializers.ModelSerializer):
     imagen = serializers.ImageField(required=False)  # Permitir que la imagen sea opcional
 
@@ -72,6 +81,26 @@ class ServicioSerializerCreate(serializers.ModelSerializer):
             servicio.imagen = imagen
             servicio.save()
         return servicio
+    
+class PaqueteServiciosSerializerCreate(serializers.ModelSerializer):
+
+    class Meta:
+        model = Servicio
+        fields = ['nombre', 'descripcion', 'precio', 'servicios']
+    
+    def validate_nombre(self, nombre):
+        # Validación personalizada si es necesario
+        return nombre
+    
+    def validate_precio(self, precio):
+        # Validación personalizada si es necesario
+        return precio
+    
+    def validate_descripcion(self, descripcion):
+        # Validación personalizada si es necesario
+        return descripcion
+
+
     
     
     
@@ -113,7 +142,7 @@ class PedidoSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Pedido
-        fields = ('id', 'realizado', 'usuario', 'servicio_carrito', 'detalles_carrito', 'total')
+        fields = ('id', 'realizado', 'usuario', 'servicio_carrito', 'detalles_carrito', 'total','descuento')
         
 
         
