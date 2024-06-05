@@ -68,10 +68,13 @@ class ServicioSerializerCreate(serializers.ModelSerializer):
     
     def validate_precio(self, precio):
         # Validación personalizada si es necesario
+        if precio < 0:
+            raise serializers.ValidationError('precio negativo')
         return precio
     
     def validate_descripcion(self, descripcion):
         # Validación personalizada si es necesario
+        
         return descripcion
 
     def create(self, validated_data):

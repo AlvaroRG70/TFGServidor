@@ -45,5 +45,8 @@ urlpatterns = [
     
     path('dj-rest-auth/google/', GoogleLogin.as_view(), name='google_login'), 
     
+    path('check-username', CheckUsernameView.as_view(), name='check-username'),
+    path('check-email', CheckEmailView.as_view(), name='check-email'),
+    
     
 ]

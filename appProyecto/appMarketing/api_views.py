@@ -78,7 +78,8 @@ def servicio_obtener(request,servicio_id):
 
 
 @api_view(['POST'])
-def servicio_create(request):  
+def servicio_create(request):
+      
     serializer = ServicioSerializerCreate(data=request.data)
     if serializer.is_valid():
         try:
@@ -647,3 +648,24 @@ def usuario_obtener_pagos(request):
     pagos = Pago.objects.filter(pedido__usuario=request.user)
     serializer = PagoSerializer(pagos, many=True)
     return Response(serializer.data)
+
+
+
+
+class CheckUsernameView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        if Usuario.objects.filter(username=username).exists():
+            return Response({'exists': True}, status=status.HTTP_200_OK)
+        return Response({'exists': False}, status=status.HTTP_200_OK)
+
+class CheckEmailView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        if Usuario.objects.filter(email=email).exists():
+            return Response({'exists': True}, status=status.HTTP_200_OK)
+        return Response({'exists': False}, status=status.HTTP_200_OK)
